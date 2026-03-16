@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>VPLAY | 影片庫</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Barlow:wght@300;400;500&family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet"/>
+
+  <style>
+    /* ══ VARIABLES ══ */
+    :root {
+      --red:      #ff4655;
+      --red-d:    #c0303d;
+      --red-glow: rgba(255,70,85,0.32);
+      --bg0: #090a0d;
+      --bg1: #111318;
+      --bg2: #181b22;
+      --bg3: #1f232c;
+      --bg4: #272b35;
+      --bd:  rgba(255,255,255,0.06);
+      --t1:  #ece8e1;
+      --t2:  #9da3ae;
+      --t3:  #4a5260;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg0);
+      color: var(--t1);
+      font-family: 'Barlow', 'Noto Sans TC', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Grain overlay */
+    body::after {
+      content: ''; position: fixed; inset: 0;
+      pointer-events: none; z-index: 9000;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+      opacity: 0.022;
+    }
+
+    /* ══ NAVBAR ══ */
+    .topbar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 800;
+      height: 60px;
+      background: linear-gradient(to bottom, rgba(9,10,13,0.98) 60%, transparent);
+      display: flex; align-items: center;
+      padding: 0 2.5rem; gap: 2rem;
+      transition: background 0.3s;
+    }
+
+    .topbar.scrolled {
+      background: rgba(9,10,13,0.97);
+      border-bottom: 1px solid var(--bd);
+      backdrop-filter: blur(14px);
+    }
+
+    .brand {
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 700; font-size: 1.65rem;
+      letter-spacing: 0.15em; color: var(--t1);
+      text-decoration: none;
+      display: flex; align-items: center; gap: 9px; flex-shrink: 0;
+    }
+
+    .brand-pip {
+      width: 8px; height: 8px;
+      background: var(--red); border-radius: 50%;
+      box-shadow: 0 0 10px var(--red);
+      animation: pip 2.5s ease-in-out infinite;
+    }
+
+    @keyframes pip {
+      0%,100% { box-shadow: 0 0 6px var(--red); }
+      50%      { box-shadow: 0 0 20px var(--red), 0 0 40px var(--red-glow); }
+    }
+
+    .topbar-nav {
+      display: flex; gap: 1.5rem; align-items: center;
+    }
+
+    .topbar-nav a {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 0.75rem; letter-spacing: 0.18em;
+      text-transform: uppercase; color: var(--t2);
+      text-decoration: none; transition: color 0.15s;
+    }
+
+    .topbar-nav a:hover,
+    .topbar-nav a.active { color: var(--red); }
+
+    .topbar-right { margin-left: auto; }
+
+    .total-tag {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 0.68rem; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--t3);
+    }
+
+    .total-tag b { color: var(--red); }
+
+    /* ══ HERO ══ */
+    .hero-banner {
+      position: relative;
+      height: 500px;
+      display: flex; align-items: flex-end;
+      overflow: hidden; padding-bottom: 3rem;
+    }
+
+    .hero-bg {
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, #0d0e12 0%, #1a0c10 50%, #0d0e12 100%);
+    }
+
+    .hero-bg::before {
+      content: '';
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(255,70,85,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,70,85,0.04) 1px, transparent 1px);
+      background-size: 60px 60px;
+      animation: gridMove 22s linear infinite;
+    }
+
+    @keyframes gridMove {
+      from { background-position: 0 0; }
+      to   { background-position: 60px 60px; }
+    }
+
+    .hero-bg::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 30% 50%, rgba(255,70,85,0.13) 0%, transparent 60%);
+    }
+
+    /* Hero featured iframe */
+    .hero-iframe-wrap {
+      position: absolute;
+      right: 5%; top: 50%; transform: translateY(-50%);
+      width: 50%;
+      aspect-ratio: 16/9;
+      border: 1px solid rgba(255,70,85,0.22);
+      border-radius: 2px;
+      overflow: hidden;
+      box-shadow: 0 20px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,70,85,0.08);
+    }
+
+    .hero-iframe-wrap iframe {
+      width: 100%; height: 100%;
+      border: none; display: block;
+      pointer-events: none; /* 防止在 hero 區域被點擊操作 */
+    }
+
+    /* Corner deco on hero */
+    .hero-iframe-wrap .c { position: absolute; width: 14px; height: 14px; z-index: 2; }
+    .hero-iframe-wrap .c-tl { top: 7px; left: 7px; border-top: 2px solid var(--red); border-left: 2px solid var(--red); }
+    .hero-iframe-wrap .c-tr { top: 7px; right: 7px; border-top: 2px solid var(--red); border-right: 2px solid var(--red); }
+    .hero-iframe-wrap .c-bl { bottom: 7px; left: 7px; border-bottom: 2px solid var(--red); border-left: 2px solid var(--red); }
+    .hero-iframe-wrap .c-br { bottom: 7px; right: 7px; border-bottom: 2px solid var(--red); border-right: 2px solid var(--red); }
+
+    .hero-fade-r {
+      position: absolute; right: 5%;
+      top: 50%; transform: translateY(-50%);
+      width: 50%; aspect-ratio: 16/9;
+      background: linear-gradient(to right, rgba(9,10,13,0.9) 0%, transparent 28%);
+      pointer-events: none; z-index: 1;
+    }
+
+    .hero-content {
+      position: relative; z-index: 2;
+      padding: 0 2.5rem;
+      max-width: 500px;
+    }
+
+    .hero-eyebrow {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 0.65rem; letter-spacing: 0.32em;
+      text-transform: uppercase; color: var(--red);
+      margin-bottom: 0.6rem;
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+
+    .hero-eyebrow::before {
+      content: ''; display: block;
+      width: 20px; height: 1px; background: var(--red);
+    }
+
+    .hero-title {
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 700;
+      font-size: clamp(2.4rem, 4vw, 3.4rem);
+      line-height: 1; letter-spacing: 0.03em; color: var(--t1);
+    }
+
+    .hero-title em { color: var(--red); font-style: normal; }
+
+    .hero-desc {
+      margin-top: 0.75rem;
+      font-size: 0.88rem; font-weight: 300;
+      color: var(--t2); line-height: 1.65;
+    }
+
+    .hero-bottom-fade {
+      position: absolute; bottom: 0; left: 0; right: 0; height: 130px;
+      background: linear-gradient(to bottom, transparent, var(--bg0));
+      pointer-events: none;
+    }
+
+    /* ══ SECTIONS ══ */
+    .sections-wrap { padding: 0 0 4rem; position: relative; z-index: 1; }
+
+    .section-block { margin-bottom: 0.25rem; padding-top: 2rem; }
+
+    .section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 2.5rem 0.85rem;
+    }
+
+    .section-title {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 1rem; font-weight: 600;
+      letter-spacing: 0.12em; text-transform: uppercase; color: var(--t1);
+      display: flex; align-items: center; gap: 0.6rem;
+    }
+
+    .section-title::before {
+      content: ''; display: block;
+      width: 3px; height: 16px;
+      background: var(--red); border-radius: 1px;
+    }
+
+    .section-count {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 0.65rem; letter-spacing: 0.16em;
+      text-transform: uppercase; color: var(--t3);
+    }
+
+    /* ══ HORIZONTAL ROW ══ */
+    .scroll-row-wrap { position: relative; }
+
+    .scroll-row {
+      display: flex; gap: 1rem;
+      overflow-x: auto; overflow-y: visible;
+      padding: 0.5rem 2.5rem 1.4rem;
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+
+    .scroll-row::-webkit-scrollbar { display: none; }
+
+    .scroll-arrow {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      width: 40px; height: 85px;
+      background: linear-gradient(to right, rgba(9,10,13,0.96), rgba(9,10,13,0.55));
+      border: none; color: var(--t1); cursor: pointer;
+      z-index: 10; display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; transition: color 0.15s;
+      opacity: 0; pointer-events: none;
+    }
+
+    .scroll-arrow.right {
+      right: 0;
+      background: linear-gradient(to left, rgba(9,10,13,0.96), rgba(9,10,13,0.55));
+    }
+
+    .scroll-arrow:hover { color: var(--red); }
+    .scroll-row-wrap:hover .scroll-arrow { opacity: 1; pointer-events: auto; }
+
+    /* ══ VIDEO CARD ══ */
+    .vcard {
+      flex: 0 0 260px;
+      background: var(--bg2);
+      border: 1px solid var(--bd);
+      border-radius: 2px; overflow: hidden;
+      cursor: pointer; position: relative;
+      transition: transform 0.25s ease, border-color 0.2s, box-shadow 0.25s, z-index 0s;
+    }
+
+    .vcard:hover {
+      transform: scale(1.06) translateY(-5px);
+      border-color: rgba(255,70,85,0.45);
+      box-shadow: 0 18px 55px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,70,85,0.12);
+      z-index: 20;
+    }
+
+    /* Corner brackets */
+    .vcard .c { position: absolute; width: 10px; height: 10px; z-index: 3; pointer-events: none; opacity: 0; transition: opacity 0.2s; }
+    .vcard .c-tl { top: 6px; left: 6px; border-top: 1.5px solid var(--red); border-left: 1.5px solid var(--red); }
+    .vcard .c-tr { top: 6px; right: 6px; border-top: 1.5px solid var(--red); border-right: 1.5px solid var(--red); }
+    .vcard .c-bl { bottom: 6px; left: 6px; border-bottom: 1.5px solid var(--red); border-left: 1.5px solid var(--red); }
+    .vcard .c-br { bottom: 6px; right: 6px; border-bottom: 1.5px solid var(--red); border-right: 1.5px solid var(--red); }
+    .vcard:hover .c { opacity: 1; }
+
+    /* Thumbnail */
+    .card-thumb {
+      position: relative; aspect-ratio: 16/9;
+      background: var(--bg3); overflow: hidden;
+    }
+
+    /* Thumbnail using first frame of Google Drive preview via img trick */
+    .card-thumb-img {
+      width: 100%; height: 100%;
+      object-fit: cover; display: block;
+      background: var(--bg3);
+    }
+
+    /* Fallback gradient thumbnail */
+    .card-thumb-fallback {
+      width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, var(--bg3) 0%, var(--bg2) 100%);
+    }
+
+    .card-thumb-fallback i {
+      font-size: 2rem; color: var(--t3);
+    }
+
+    /* Play overlay on card */
+    .thumb-overlay {
+      position: absolute; inset: 0;
+      background: rgba(0,0,0,0.3);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; transition: opacity 0.2s;
+    }
+
+    .vcard:hover .thumb-overlay { opacity: 1; }
+
+    .thumb-play {
+      width: 46px; height: 46px;
+      background: var(--red); border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem; color: #fff;
+      box-shadow: 0 0 30px var(--red-glow);
+      transform: scale(0.8); transition: transform 0.2s;
+    }
+
+    .vcard:hover .thumb-play { transform: scale(1); }
+
+    /* Card body */
+    .card-body-v {
+      padding: 0.6rem 0.75rem 0.65rem;
+    }
+
+    .card-label {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 0.88rem; font-weight: 600;
+      letter-spacing: 0.02em; color: var(--t1);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      line-height: 1.3;
+    }
+
+    .card-meta {
+      margin-top: 2px;
+      font-size: 0.68rem; color: var(--t3);
+      font-weight: 300; letter-spacing: 0.04em;
+    }
+
+    /* ══ MODAL ══ */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 2000;
+      background: rgba(0,0,0,0.9);
+      display: none; align-items: center; justify-content: center;
+      padding: 1rem;
+      backdrop-filter: blur(8px);
+    }
+
+    .modal-overlay.open {
+      display: flex;
+      animation: fadeIn 0.2s ease;
+    }
+
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    .modal-box {
+      background: var(--bg1);
+      border: 1px solid rgba(255,70,85,0.28);
+      border-radius: 3px;
+      width: 100%; max-width: 980px;
+      position: relative;
+      animation: scaleIn 0.22s ease;
+      box-shadow: 0 30px 100px rgba(0,0,0,0.85);
+    }
+
+    @keyframes scaleIn {
+      from { transform: scale(0.93); opacity: 0; }
+      to   { transform: scale(1);    opacity: 1; }
+    }
+
+    /* Corner deco */
+    .modal-box .c { position: absolute; width: 14px; height: 14px; z-index: 2; }
+    .modal-box .c-tl { top: 8px; left: 8px; border-top: 1.5px solid var(--red); border-left: 1.5px solid var(--red); }
+    .modal-box .c-tr { top: 8px; right: 8px; border-top: 1.5px solid var(--red); border-right: 1.5px solid var(--red); }
+    .modal-box .c-bl { bottom: 8px; left: 8px; border-bottom: 1.5px solid var(--red); border-left: 1.5px solid var(--red); }
+    .modal-box .c-br { bottom: 8px; right: 8px; border-bottom: 1.5px solid var(--red); border-right: 1.5px solid var(--red); }
+
+    .modal-close {
+      position: absolute; top: 10px; right: 10px; z-index: 5;
+      background: rgba(0,0,0,0.6); border: 1px solid var(--bd);
+      color: var(--t2); width: 32px; height: 32px;
+      border-radius: 50%; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.9rem; transition: color 0.15s, background 0.15s;
+    }
+
+    .modal-close:hover { color: var(--red); background: rgba(255,70,85,0.15); }
+
+    /* iframe embed area */
+    .modal-iframe-wrap {
+      position: relative;
+      aspect-ratio: 16/9;
+      background: #000;
+      border-radius: 2px 2px 0 0;
+      overflow: hidden;
+    }
+
+    .modal-iframe-wrap iframe {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      border: none; display: block;
+    }
+
+    /* Loading spinner inside iframe wrap */
+    .iframe-loading {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      background: #000; z-index: 1;
+      gap: 0.75rem; pointer-events: none;
+      transition: opacity 0.4s;
+    }
+
+    .iframe-loading.hidden { opacity: 0; pointer-events: none; }
+
+    .spinner {
+      width: 36px; height: 36px;
+      border: 2px solid var(--bg4);
+      border-top-color: var(--red);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .iframe-loading p {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 0.7rem; letter-spacing: 0.18em;
+      text-transform: uppercase; color: var(--t3);
+    }
+
+    /* Modal info bar */
+    .modal-info {
+      padding: 0.85rem 1.2rem 0.65rem;
+      border-bottom: 1px solid var(--bd);
+      display: flex; align-items: center; gap: 1rem;
+    }
+
+    .modal-text { flex: 1; min-width: 0; }
+
+    .modal-eyebrow {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 0.6rem; letter-spacing: 0.28em;
+      text-transform: uppercase; color: var(--red);
+      margin-bottom: 0.2rem;
+    }
+
+    #modalTitle {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 1.15rem; font-weight: 600;
+      letter-spacing: 0.04em; color: var(--t1);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    .modal-actions {
+      display: flex; gap: 0.5rem; flex-shrink: 0;
+    }
+
+    .modal-btn-icon {
+      background: var(--bg3); border: 1px solid var(--bd);
+      color: var(--t2); width: 32px; height: 32px;
+      border-radius: 2px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.85rem; transition: color 0.15s, background 0.15s;
+    }
+
+    .modal-btn-icon:hover { color: var(--red); background: var(--bg4); }
+
+    /* Fullscreen hint */
+    .modal-hint {
+      padding: 0.45rem 1.2rem 0.55rem;
+      font-size: 0.68rem; color: var(--t3);
+      letter-spacing: 0.06em;
+      display: flex; align-items: center; gap: 0.4rem;
+    }
+
+    .modal-hint i { font-size: 0.75rem; }
+
+    /* ══ FOOTER ══ */
+    footer {
+      text-align: center; padding: 1.5rem;
+      border-top: 1px solid var(--bd);
+      font-size: 0.68rem; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--t3);
+    }
+
+    footer b { color: var(--red); font-weight: 500; }
+
+    /* ══ RESPONSIVE ══ */
+    @media (max-width: 680px) {
+      .hero-iframe-wrap, .hero-fade-r { display: none; }
+      .hero-banner { height: 300px; }
+      .topbar-nav { display: none; }
+      .vcard { flex: 0 0 200px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══ NAVBAR ═══ -->
+<nav class="topbar" id="topbar">
+  <a href="#" class="brand"><div class="brand-pip"></div>VPLAY</a>
+  <nav class="topbar-nav" id="topbarNav">
+    <!--
+      導覽連結自動由 JS 從 section 產生
+      你也可以手動加入：<a href="#cat-xxx">分類名稱</a>
+    -->
+  </nav>
+  <div class="topbar-right">
+    <span class="total-tag">共 <b id="totalCount">5</b> 部影片</span>
+  </div>
+</nav>
+
+<!-- ═══ HERO BANNER ═══ -->
+<section class="hero-banner">
+  <div class="hero-bg"></div>
+
+  <!--
+    ★ Hero 精選影片（右側預覽）
+       將 src 換成你的 Google Drive /preview 連結
+  -->
+  <div class="hero-iframe-wrap" id="heroWrap">
+    <div class="c c-tl"></div><div class="c c-tr"></div>
+    <div class="c c-bl"></div><div class="c c-br"></div>
+    <iframe
+      id="heroIframe"
+      src="https://drive.google.com/file/d/1bFBHkecluwNcnEikI215q_6oYg9_aoYo/preview"
+      allow="autoplay"
+      allowfullscreen>
+    </iframe>
+  </div>
+  <div class="hero-fade-r"></div>
+
+  <div class="hero-content">
+    <div class="hero-eyebrow">精選播放</div>
+    <!--
+      ★ 修改標題與描述
+    -->
+    <h1 class="hero-title"><em>精華</em>庫</h1>
+    <p class="hero-desc">選擇分類，點擊任一影片即可開啟播放。<br>所有影片受版權保護，禁止下載。</p>
+  </div>
+
+  <div class="hero-bottom-fade"></div>
+</section>
+
+<!-- ═══ VIDEO SECTIONS ═══ -->
+<div class="sections-wrap" id="sectionsWrap">
+
+  <!--
+  ╔═══════════════════════════════════════════════════════════════╗
+  ║  📌 使用說明                                                   ║
+  ║                                                               ║
+  ║  影片連結格式（Google Drive）：                                 ║
+  ║  → 在 Google Drive 右鍵影片 → 共用 → 複製連結                  ║
+  ║  → 得到：https://drive.google.com/file/d/【檔案ID】/view       ║
+  ║  → 將最後的 /view 改成 /preview 填入 data-src                  ║
+  ║  → 完整格式：https://drive.google.com/file/d/【檔案ID】/preview ║
+  ║                                                               ║
+  ║  每個 <section class="section-block"> = 一個分類橫列            ║
+  ║  每個 <div class="vcard">             = 一部影片               ║
+  ║                                                               ║
+  ║  修改項目：                                                    ║
+  ║  1. section id      → 唯一識別碼，例如 id="cat-tutorial"       ║
+  ║  2. section-title   → 分類名稱                                ║
+  ║  3. data-src        → Google Drive /preview 連結              ║
+  ║  4. data-title      → 影片標題（Modal 顯示用）                  ║
+  ║  5. data-cat        → 所屬分類（Modal 顯示用）                  ║
+  ║  6. card-label      → 卡片上顯示的標題                         ║
+  ║  7. card-meta       → 卡片副標（說明/時長等）                   ║
+  ║                                                               ║
+  ║  縮圖：預設顯示影片圖示，若有縮圖圖片可填入 data-thumb="圖片URL" ║
+  ╚═══════════════════════════════════════════════════════════════╝
+  -->
+
+  <!-- ── 分類一 ── -->
+  <section class="section-block" id="cat-1" data-label="分類一 ACE">
+    <div class="section-header">
+      <div class="section-title">分類一 ACE</div>
+      <span class="section-count"></span>
+    </div>
+    <div class="scroll-row-wrap">
+      <button class="scroll-arrow left"  data-dir="left"><i class="bi bi-chevron-left"></i></button>
+      <button class="scroll-arrow right" data-dir="right"><i class="bi bi-chevron-right"></i></button>
+      <div class="scroll-row">
+
+        <div class="vcard"
+             data-src="https://drive.google.com/file/d/1bFBHkecluwNcnEikI215q_6oYg9_aoYo/preview"
+             data-title="特戰ACE"
+             data-cat="分類一">
+          <div class="c c-tl"></div><div class="c c-tr"></div>
+          <div class="c c-bl"></div><div class="c c-br"></div>
+          <div class="card-thumb">
+            <div class="card-thumb-fallback"><i class="bi bi-play-circle"></i></div>
+            <div class="thumb-overlay"><div class="thumb-play"><i class="bi bi-play-fill"></i></div></div>
+          </div>
+          <div class="card-body-v">
+            <div class="card-label">特戰ACE</div>
+            <div class="card-meta">6666</div>
+          </div>
+        </div>
+
+        <div class="vcard"
+             data-src=""
+             data-title="影片標題 A2"
+             data-cat="分類一">
+          <div class="c c-tl"></div><div class="c c-tr"></div>
+          <div class="c c-bl"></div><div class="c c-br"></div>
+          <div class="card-thumb">
+            <div class="card-thumb-fallback"><i class="bi bi-play-circle"></i></div>
+            <div class="thumb-overlay"><div class="thumb-play"><i class="bi bi-play-fill"></i></div></div>
+          </div>
+          <div class="card-body-v">
+            <div class="card-label">影片標題 A2</div>
+            <div class="card-meta">分類一 · 說明文字</div>
+          </div>
+        </div>
+
+        <div class="vcard"
+             data-src=""
+             data-title="影片標題 A3"
+             data-cat="分類一">
+          <div class="c c-tl"></div><div class="c c-tr"></div>
+          <div class="c c-bl"></div><div class="c c-br"></div>
+          <div class="card-thumb">
+            <div class="card-thumb-fallback"><i class="bi bi-play-circle"></i></div>
+            <div class="thumb-overlay"><div class="thumb-play"><i class="bi bi-play-fill"></i></div></div>
+          </div>
+          <div class="card-body-v">
+            <div class="card-label">影片標題 A3</div>
+            <div class="card-meta">分類一 · 說明文字</div>
+          </div>
+        </div>
+
+        <div class="vcard"
+             data-src=""
+             data-title="影片標題 A4"
+             data-cat="分類一">
+          <div class="c c-tl"></div><div class="c c-tr"></div>
+          <div class="c c-bl"></div><div class="c c-br"></div>
+          <div class="card-thumb">
+            <div class="card-thumb-fallback"><i class="bi bi-play-circle"></i></div>
+            <div class="thumb-overlay"><div class="thumb-play"><i class="bi bi-play-fill"></i></div></div>
+          </div>
+          <div class="card-body-v">
+            <div class="card-label">影片標題 A4</div>
+            <div class="card-meta">分類一 · 說明文字</div>
+          </div>
+        </div>
+
+        <div class="vcard"
+             data-src=""
+             data-title="影片標題 A5"
+             data-cat="分類一">
+          <div class="c c-tl"></div><div class="c c-tr"></div>
+          <div class="c c-bl"></div><div class="c c-br"></div>
+          <div class="card-thumb">
+            <div class="card-thumb-fallback"><i class="bi bi-play-circle"></i></div>
+            <div class="thumb-overlay"><div class="thumb-play"><i class="bi bi-play-fill"></i></div></div>
+          </div>
+          <div class="card-body-v">
+            <div class="card-label">影片標題 A5</div>
+            <div class="card-meta">分類一 · 說明文字</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 分類二 ── -->
+  <section class="section-block" id="cat-2" data-label="分類二 4殺">
+    <div class="section-header">
+      <div class="section-title">分類二 4殺</div>
+      <span class="section-count"></span>
+    </div>
+    <div class="scroll-row-wrap">
+      <button class="scroll-arrow left"  data-dir="left"><i class="bi bi-chevron-left"></i></button>
+      <button class="scroll-arrow right" data-dir="right"><i class="bi bi-chevron-right"></i></button>
+      <div class="scroll-row">
+
+        <div class="vcard"
+             data-src="https://drive.google.com/file/d/1r4docTdM9m31xrioyrID7EljGgZcw5eJ/preview"
+             data-title="影片標題 B1"
+             data-cat="分類二">
+          <div class="c c-tl"></div><div class="c c-tr"></div>
+          <div class="c c-bl"></div><div class="c c-br"></div>
+          <div class="card-thumb">
+            <div class="card-thumb-fallback"><i class="bi bi-play-circle"></i></div>
+            <div class="thumb-overlay"><div class="thumb-play"><i class="bi bi-play-fill"></i></div></div>
+          </div>
+          <div class="card-body-v">
+            <div class="card-label">影片標題 B1</div>
+            <div class="card-meta">666</div>
+          </div>
+        </div>
+
+        <div class="vcard"
+             data-src="https://drive.google.com/file/d/1uyvOcdcpgBO_zj3ehFZve63tRXC_sjWC/preview"
+             data-title="影片標題 B2"
+             data-cat="分類二">
+          <div class="c c-tl"></div><div class="c c-tr"></div>
+          <div class="c c-bl"></div><div class="c c-br"></div>
+          <div class="card-thumb">
+            <div class="card-thumb-fallback"><i class="bi bi-play-circle"></i></div>
+            <div class="thumb-overlay"><div class="thumb-play"><i class="bi bi-play-fill"></i></div></div>
+          </div>
+          <div class="card-body-v">
+            <div class="card-label">影片標題 B2</div>
+            <div class="card-meta">666</div>
+          </div>
+        </div>
+
+        <div class="vcard"
+             data-src="https://drive.google.com/file/d/15Z6r_31y_BuxYj6m72XIjzs837SMUXzC/preview"
+             data-title="影片標題 B3"
+             data-cat="分類二">
+          <div class="c c-tl"></div><div class="c c-tr"></div>
+          <div class="c c-bl"></div><div class="c c-br"></div>
+          <div class="card-thumb">
+            <div class="card-thumb-fallback"><i class="bi bi-play-circle"></i></div>
+            <div class="thumb-overlay"><div class="thumb-play"><i class="bi bi-play-fill"></i></div></div>
+          </div>
+          <div class="card-body-v">
+            <div class="card-label">影片標題 B3</div>
+            <div class="card-meta">分類二 · 說明文字</div>
+          </div>
+        </div>
+
+        <div class="vcard"
+             data-src=""
+             data-title="影片標題 B4"
+             data-cat="分類二">
+          <div class="c c-tl"></div><div class="c c-tr"></div>
+          <div class="c c-bl"></div><div class="c c-br"></div>
+          <div class="card-thumb">
+            <div class="card-thumb-fallback"><i class="bi bi-play-circle"></i></div>
+            <div class="thumb-overlay"><div class="thumb-play"><i class="bi bi-play-fill"></i></div></div>
+          </div>
+          <div class="card-body-v">
+            <div class="card-label">影片標題 B4</div>
+            <div class="card-meta">分類二 · 說明文字</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 分類三 ── -->
+  <section class="section-block" id="cat-3" data-label="分類三 3殺">
+    <div class="section-header">
+      <div class="section-title">分類三 3殺</div>
+      <span class="section-count"></span>
+    </div>
+    <div class="scroll-row-wrap">
+      <button class="scroll-arrow left"  data-dir="left"><i class="bi bi-chevron-left"></i></button>
+      <button class="scroll-arrow right" data-dir="right"><i class="bi bi-chevron-right"></i></button>
+      <div class="scroll-row">
+
+        <div class="vcard"
+             data-src="https://drive.google.com/file/d/1yhZMJcXQYxl0ChfzMKG1KIZsYuxYt1Pt/preview"
+             data-title="影片標題 C1"
+             data-cat="分類三">
+          <div class="c c-tl"></div><div class="c c-tr"></div>
+          <div class="c c-bl"></div><div class="c c-br"></div>
+          <div class="card-thumb">
+            <div class="card-thumb-fallback"><i class="bi bi-play-circle"></i></div>
+            <div class="thumb-overlay"><div class="thumb-play"><i class="bi bi-play-fill"></i></div></div>
+          </div>
+          <div class="card-body-v">
+            <div class="card-label">影片標題 C1</div>
+            <div class="card-meta">分類三 · 說明文字</div>
+          </div>
+        </div>
+
+        <div class="vcard"
+             data-src=""
+             data-title="影片標題 C2"
+             data-cat="分類三">
+          <div class="c c-tl"></div><div class="c c-tr"></div>
+          <div class="c c-bl"></div><div class="c c-br"></div>
+          <div class="card-thumb">
+            <div class="card-thumb-fallback"><i class="bi bi-play-circle"></i></div>
+            <div class="thumb-overlay"><div class="thumb-play"><i class="bi bi-play-fill"></i></div></div>
+          </div>
+          <div class="card-body-v">
+            <div class="card-label">影片標題 C2</div>
+            <div class="card-meta">分類三 · 說明文字</div>
+          </div>
+        </div>
+
+        <div class="vcard"
+             data-src=""
+             data-title="影片標題 C3"
+             data-cat="分類三">
+          <div class="c c-tl"></div><div class="c c-tr"></div>
+          <div class="c c-bl"></div><div class="c c-br"></div>
+          <div class="card-thumb">
+            <div class="card-thumb-fallback"><i class="bi bi-play-circle"></i></div>
+            <div class="thumb-overlay"><div class="thumb-play"><i class="bi bi-play-fill"></i></div></div>
+          </div>
+          <div class="card-body-v">
+            <div class="card-label">影片標題 C3</div>
+            <div class="card-meta">分類三 · 說明文字</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ▼ 複製上方 <section> 區塊以新增更多分類 ▼ -->
+
+</div>
+
+<footer>
+  VPLAY &nbsp;|&nbsp; <b>影片受版權保護，禁止下載或轉載</b>
+</footer>
+
+<!-- ═══ MODAL ═══ -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box">
+    <div class="c c-tl"></div><div class="c c-tr"></div>
+    <div class="c c-bl"></div><div class="c c-br"></div>
+
+    <button class="modal-close" id="modalClose"><i class="bi bi-x"></i></button>
+
+    <div class="modal-iframe-wrap">
+      <!-- Loading spinner -->
+      <div class="iframe-loading" id="iframeLoading">
+        <div class="spinner"></div>
+        <p>載入中…</p>
+      </div>
+      <iframe id="modalIframe" src="" allow="autoplay; fullscreen" allowfullscreen></iframe>
+    </div>
+
+    <div class="modal-info">
+      <div class="modal-text">
+        <div class="modal-eyebrow" id="modalCat">// 正在播放</div>
+        <div id="modalTitle">—</div>
+      </div>
+      <div class="modal-actions">
+        <button class="modal-btn-icon" id="btnModalFs" title="全螢幕"><i class="bi bi-fullscreen"></i></button>
+      </div>
+    </div>
+
+    <div class="modal-hint">
+      <i class="bi bi-info-circle"></i>
+      播放器由 Google Drive 提供 &nbsp;·&nbsp; 按 <kbd style="background:var(--bg3);border:1px solid var(--bd);padding:1px 5px;border-radius:2px;font-size:0.65rem;">Esc</kbd> 關閉
+    </div>
+  </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+$(function () {
+
+  /* ── Navbar scroll ── */
+  $(window).on('scroll', function () {
+    $('#topbar').toggleClass('scrolled', $(this).scrollTop() > 20);
+  });
+
+  /* ── Auto-generate navbar links from sections ── */
+  $('.section-block').each(function () {
+    const id    = $(this).attr('id');
+    const label = $(this).data('label') || $(this).find('.section-title').text().trim();
+    $('#topbarNav').append(`<a href="#${id}">${label}</a>`);
+  });
+
+  /* ── Active nav highlight on scroll ── */
+  $(window).on('scroll.nav', function () {
+    let current = '';
+    $('.section-block').each(function () {
+      if ($(this).offset().top - 80 <= $(window).scrollTop()) {
+        current = $(this).attr('id');
+      }
+    });
+    $('#topbarNav a').removeClass('active');
+    if (current) $('#topbarNav a[href="#' + current + '"]').addClass('active');
+  });
+
+  /* ── Total count & section counts ── */
+  $('#totalCount').text($('.vcard').length);
+  $('.section-block').each(function () {
+    const n = $(this).find('.vcard').length;
+    $(this).find('.section-count').text(n + ' 部');
+  });
+
+  /* ── Scroll arrows ── */
+  $('.scroll-row-wrap').each(function () {
+    const $wrap = $(this);
+    const $row  = $wrap.find('.scroll-row');
+    $wrap.find('.scroll-arrow').on('click', function () {
+      const dir  = $(this).data('dir');
+      const dist = 280 * 3;
+      $row[0].scrollBy({ left: dir === 'right' ? dist : -dist, behavior: 'smooth' });
+    });
+  });
+
+  /* ── Thumbnail hover preview (optional: show first frame via img) ── */
+  // Google Drive 縮圖可用下方方式取得（需要檔案為公開）
+  // https://drive.google.com/thumbnail?id=【檔案ID】&sz=w320
+  $('.vcard').each(function () {
+    const src = $(this).data('src') || '';
+    const match = src.match(/\/d\/([a-zA-Z0-9_-]+)\//);
+    if (match) {
+      const fileId = match[1];
+      const thumbUrl = `https://drive.google.com/thumbnail?id=${fileId}&sz=w400`;
+      const $thumb = $(this).find('.card-thumb');
+      const $fallback = $thumb.find('.card-thumb-fallback');
+
+      const img = new Image();
+      img.onload = function () {
+        // Replace fallback with actual thumbnail
+        $fallback.replaceWith(`<img class="card-thumb-img" src="${thumbUrl}" alt="" draggable="false" oncontextmenu="return false;">`);
+      };
+      img.onerror = function () {
+        // Keep fallback icon
+      };
+      img.src = thumbUrl;
+    }
+  });
+
+  /* ── Modal ── */
+  const $modal   = $('#modalOverlay');
+  const $iframe  = $('#modalIframe');
+  const $loading = $('#iframeLoading');
+
+  function openModal(src, title, cat) {
+    $('#modalTitle').text(title);
+    $('#modalCat').text('// ' + cat);
+
+    // Show loading, set iframe src
+    $loading.removeClass('hidden');
+    $iframe.attr('src', src);
+
+    // Hide spinner after delay (iframe load can't be detected cross-origin)
+    setTimeout(function () { $loading.addClass('hidden'); }, 2200);
+
+    $modal.addClass('open');
+    $('body').css('overflow', 'hidden');
+  }
+
+  function closeModal() {
+    $iframe.attr('src', '');  // stop playback
+    $modal.removeClass('open');
+    $('body').css('overflow', '');
+  }
+
+  $('.vcard').on('click', function () {
+    openModal($(this).data('src'), $(this).data('title'), $(this).data('cat'));
+  });
+
+  $('#modalClose').on('click', closeModal);
+
+  $modal.on('click', function (e) {
+    if ($(e.target).is($modal)) closeModal();
+  });
+
+  $(document).on('keydown', function (e) {
+    if (e.key === 'Escape' && $modal.hasClass('open')) closeModal();
+  });
+
+  /* Fullscreen button */
+  $('#btnModalFs').on('click', function () {
+    const vw = document.querySelector('.modal-iframe-wrap');
+    document.fullscreenElement
+      ? document.exitFullscreen()
+      : vw.requestFullscreen && vw.requestFullscreen();
+  });
+
+});
+</script>
+</body>
+</html>
